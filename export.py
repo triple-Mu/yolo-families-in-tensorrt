@@ -6,12 +6,12 @@ import onnx
 import onnxsim
 import torch
 
-from version.check import MODEL, check, get_root, set_env
+from version.check import MODEL, set_env
 
 
 def main(opt):
     mod = MODEL(opt.version)
-    device = torch.device(opt.device)
+    device = torch.device(opt.device.lower)
     weights = Path(opt.weights)
     imgsz = opt.imgsz * 2 if len(opt.imgsz) == 1 else opt.imgsz * 1  # expand
     assert weights.exists()
@@ -53,7 +53,7 @@ def main(opt):
         inputs,
         save_to,
         verbose=False,
-        opset_version=12,
+        opset_version=opt.opset,
         training=torch.onnx.TrainingMode.EVAL,
         do_constant_folding=True,
         input_names=['images'],
