@@ -11,7 +11,7 @@ from version.check import MODEL, set_env
 
 def main(opt):
     mod = MODEL(opt.version)
-    device = torch.device(opt.device.lower)
+    device = torch.device(opt.device.lower())
     weights = Path(opt.weights)
     imgsz = opt.imgsz * 2 if len(opt.imgsz) == 1 else opt.imgsz * 1  # expand
     assert weights.exists()
@@ -98,6 +98,7 @@ def parse_opt():
                         help='image (h, w)')
     parser.add_argument('--batch-size', type=int, default=1, help='batch size')
     parser.add_argument('--device',
+                        type=str,
                         default='cpu',
                         help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--simplify',
