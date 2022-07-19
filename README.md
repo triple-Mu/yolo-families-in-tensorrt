@@ -57,7 +57,7 @@ trtexec --onnx=./yolov7.onnx \
 ### 参数介绍
 
 - `--weights` : 使用最新版本开源仓库训练好的模型权重。
-- `--version` : 指定模型版本。目前支持 5:yolov5, 6:yolov6, 7:yolov7; 未来考虑增加 8:airdet -1:ppyoloe(需要安装PaddleDetection)。
+- `--version` : 指定模型版本。目前支持 5:yolov5, 6:yolov6, 7:yolov7; 未来考虑增加 8:airdet, -1:ppyoloe(需要安装PaddleDetection)。
 - `--img-size` : 输入图片尺寸。
 - `--batch-size` : 输入批量大小。
 - `--device` : 指定使用 CPU 或者 CUDA:0 CUDA:1 ...导出 ONNX。
