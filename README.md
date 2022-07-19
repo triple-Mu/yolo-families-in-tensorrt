@@ -56,7 +56,6 @@ trtexec --onnx=./yolov7.onnx \
 
 ### 参数介绍
 
-```
 - `--weights` : 使用最新版本开源仓库训练好的模型权重。
 - `--version` : 指定模型版本。目前支持 5:yolov5, 6:yolov6, 7:yolov7; 未来考虑增加 8:airdet -1:ppyoloe(需要安装PaddleDetection)。
 - `--img-size` : 输入图片尺寸。
@@ -68,4 +67,3 @@ trtexec --onnx=./yolov7.onnx \
 - `--max-obj` : 每张图片的最大检测框数量。
 - `--iou-thres` : NMS 算法中的 IOU 阈值。
 - `--conf-thres` : NMS 算法中的置信度阈值。
-```
