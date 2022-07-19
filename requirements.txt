@@ -4,4 +4,3 @@ thop
 torch
 onnxsim>=0.4.0
 # onnxsim_no_ort>=0.4.0
-

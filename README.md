@@ -24,6 +24,9 @@
 ### 使用方法
 
 ``` shell
+# 安装环境
+pip install -r requirements.txt
+
 # 导出普通的 ONNX
 python ./export.py \
     --weights ./yolov7.pt \
