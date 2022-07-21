@@ -31,8 +31,8 @@ class Conv(nn.Module):
                               groups=g,
                               bias=False)
         self.bn = nn.BatchNorm2d(c2)
-        self.act = nn.SiLU() if act is True else (
-            act if isinstance(act, nn.Module) else nn.Identity())
+        self.act = (nn.SiLU() if act is True else
+                    (act if isinstance(act, nn.Module) else nn.Identity()))
 
     def forward(self, x):
         return self.act(self.bn(self.conv(x)))
@@ -65,7 +65,6 @@ class DWConvTranspose2d(nn.ConvTranspose2d):
 
 
 class TransformerLayer(nn.Module):
-    # Transformer layer https://arxiv.org/abs/2010.11929 (LayerNorm layers removed for better performance)
     def __init__(self, c, num_heads):
         super().__init__()
         self.q = nn.Linear(c, c, bias=False)
@@ -267,8 +266,15 @@ class Focus(nn.Module):
 
     def forward(self, x):  # x(b,c,w,h) -> y(b,4c,w/2,h/2)
         return self.conv(
-            torch.cat((x[..., ::2, ::2], x[..., 1::2, ::2], x[..., ::2, 1::2],
-                       x[..., 1::2, 1::2]), 1))
+            torch.cat(
+                (
+                    x[..., ::2, ::2],
+                    x[..., 1::2, ::2],
+                    x[..., ::2, 1::2],
+                    x[..., 1::2, 1::2],
+                ),
+                1,
+            ))
         # return self.conv(self.contract(x))
 
 
@@ -299,10 +305,11 @@ class GhostBottleneck(nn.Module):
         self.conv = nn.Sequential(
             GhostConv(c1, c_, 1, 1),  # pw
             DWConv(c_, c_, k, s, act=False) if s == 2 else nn.Identity(),  # dw
-            GhostConv(c_, c2, 1, 1, act=False))  # pw-linear
-        self.shortcut = nn.Sequential(DWConv(
-            c1, c1, k, s, act=False), Conv(
-                c1, c2, 1, 1, act=False)) if s == 2 else nn.Identity()
+            GhostConv(c_, c2, 1, 1, act=False),
+        )  # pw-linear
+        self.shortcut = (nn.Sequential(DWConv(c1, c1, k, s, act=False),
+                                       Conv(c1, c2, 1, 1, act=False))
+                         if s == 2 else nn.Identity())
 
     def forward(self, x):
         return self.conv(x) + self.shortcut(x)
@@ -315,7 +322,12 @@ class Contract(nn.Module):
         self.gain = gain
 
     def forward(self, x):
-        b, c, h, w = x.size(
+        (
+            b,
+            c,
+            h,
+            w,
+        ) = x.size(
         )  # assert (h / s == 0) and (W / s == 0), 'Indivisible gain'
         s = self.gain
         x = x.view(b, c, h // s, s, w // s, s)  # x(1,64,40,2,40,2)

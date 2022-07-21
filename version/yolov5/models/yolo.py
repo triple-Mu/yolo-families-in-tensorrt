@@ -1,7 +1,10 @@
-from pathlib import Path
+import math
+
+import torch
+import torch.nn as nn
 
 from version.check import check
-from version.yolov5.models.common import *
+from version.yolov5.models.common import Conv, DWConv
 
 try:
     import thop  # for FLOPs computation
@@ -17,7 +20,7 @@ def make_divisible(x, divisor):
 
 
 def check_anchor_order(m):
-    # Check anchor order against stride order for YOLOv5 Detect() module m, and correct if necessary
+
     a = m.anchors.prod(-1).mean(-1).view(
         -1)  # mean anchor area per output layer
     da = a[-1] - a[0]  # delta a
@@ -28,15 +31,16 @@ def check_anchor_order(m):
 
 
 def fuse_conv_and_bn(conv, bn):
-    # Fuse Conv2d() and BatchNorm2d() layers https://tehnokv.com/posts/fusing-batchnorm-and-conv/
-    fusedconv = nn.Conv2d(conv.in_channels,
-                          conv.out_channels,
-                          kernel_size=conv.kernel_size,
-                          stride=conv.stride,
-                          padding=conv.padding,
-                          groups=conv.groups,
-                          bias=True).requires_grad_(False).to(
-                              conv.weight.device)
+
+    fusedconv = (nn.Conv2d(
+        conv.in_channels,
+        conv.out_channels,
+        kernel_size=conv.kernel_size,
+        stride=conv.stride,
+        padding=conv.padding,
+        groups=conv.groups,
+        bias=True,
+    ).requires_grad_(False).to(conv.weight.device))
 
     # Prepare filters
     w_conv = conv.weight.clone().view(conv.out_channels, -1)
@@ -44,9 +48,8 @@ def fuse_conv_and_bn(conv, bn):
     fusedconv.weight.copy_(torch.mm(w_bn, w_conv).view(fusedconv.weight.shape))
 
     # Prepare spatial bias
-    b_conv = torch.zeros(
-        conv.weight.size(0),
-        device=conv.weight.device) if conv.bias is None else conv.bias
+    b_conv = (torch.zeros(conv.weight.size(0), device=conv.weight.device)
+              if conv.bias is None else conv.bias)
     b_bn = bn.bias - bn.weight.mul(bn.running_mean).div(
         torch.sqrt(bn.running_var + bn.eps))
     fusedconv.bias.copy_(
@@ -82,8 +85,8 @@ class Detect(nn.Module):
         for i in range(self.nl):
             x[i] = self.m[i](x[i])  # conv
             bs, _, ny, nx = x[i].shape  # x(bs,255,20,20) to x(bs,3,20,20,85)
-            x[i] = x[i].view(bs, self.na, self.no, ny,
-                             nx).permute(0, 1, 3, 4, 2).contiguous()
+            x[i] = (x[i].view(bs, self.na, self.no, ny,
+                              nx).permute(0, 1, 3, 4, 2).contiguous())
 
             if self.grid[i].shape[2:4] != x[i].shape[2:4]:
                 self.grid[i], self.anchor_grid[i] = self._make_grid(nx, ny, i)
@@ -108,11 +111,10 @@ class Detect(nn.Module):
                                                                  dtype=t)
         # yv, xv = torch.meshgrid(y, x, indexing='ij') # torch>=1.10.0
         yv, xv = torch.meshgrid(y, x)
-        grid = torch.stack(
-            (xv, yv),
-            2).expand(shape) - 0.5  # add grid offset, i.e. y = 2.0 * x - 0.5
-        anchor_grid = (self.anchors[i] * self.stride[i]).view(
-            (1, self.na, 1, 1, 2)).expand(shape)
+        grid = (torch.stack((xv, yv), 2).expand(shape) - 0.5
+                )  # add grid offset, i.e. y = 2.0 * x - 0.5
+        anchor_grid = ((self.anchors[i] * self.stride[i]).view(
+            (1, self.na, 1, 1, 2)).expand(shape))
         return grid, anchor_grid
 
 
@@ -156,12 +158,12 @@ class Model(nn.Module):
         return self._forward_once(x)  # single-scale inference, train
 
     def _forward_once(self, x):
-        y, dt = [], []  # outputs
+        y = []
         for m in self.model:
             if m.f != -1:  # if not from previous layer
-                x = y[m.f] if isinstance(
-                    m.f, int) else [x if j == -1 else y[j]
-                                    for j in m.f]  # from earlier layers
+                x = (y[m.f] if isinstance(m.f, int) else
+                     [x if j == -1 else y[j]
+                      for j in m.f])  # from earlier layers
             x = m(x)  # run
             y.append(x if m.i in self.save else None)  # save output
 

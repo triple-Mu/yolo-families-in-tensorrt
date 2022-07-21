@@ -7,7 +7,7 @@ from version.yolov6.models.yolo import Detect
 
 
 class Conv(nn.Module):
-    '''Normal Conv with SiLU activation'''
+    """Normal Conv with SiLU activation"""
     def __init__(self,
                  in_channels,
                  out_channels,
@@ -37,14 +37,13 @@ class Conv(nn.Module):
 
 
 class SiLU(nn.Module):
-    '''Activation of SiLU'''
+    """Activation of SiLU"""
     @staticmethod
     def forward(x):
         return x * torch.sigmoid(x)
 
 
 def fuse_conv_and_bn(conv, bn):
-    # Fuse convolution and batchnorm layers https://tehnokv.com/posts/fusing-batchnorm-and-conv/
     fusedconv = (nn.Conv2d(
         conv.in_channels,
         conv.out_channels,
@@ -77,10 +76,10 @@ def model2deploy(weights, device=None, end2end=False, config=None):
     model = ckpt['ema' if ckpt.get('ema') else 'model'].to(device).float()
     for m in model.modules():
         if check(type(m), 'Conv'):
-            if hasattr(m, "bn"):
+            if hasattr(m, 'bn'):
                 m.__class__ = Conv
                 m.conv = fuse_conv_and_bn(m.conv, m.bn)  # update conv
-                delattr(m, "bn")  # remove batchnorm
+                delattr(m, 'bn')  # remove batchnorm
                 m.forward = m.forward_fuse  # update forward
             if isinstance(m.act, nn.SiLU):
                 m.act = SiLU()

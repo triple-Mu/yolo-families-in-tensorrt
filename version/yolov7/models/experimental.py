@@ -4,11 +4,9 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from version.yolov7.models.common import Conv
-
 
 class SiLU(nn.Module):
-    '''Activation of SiLU'''
+    """Activation of SiLU"""
     @staticmethod
     def forward(x):
         return x * torch.sigmoid(x)
@@ -47,7 +45,7 @@ class MixConv2d(nn.Module):
         super().__init__()
         n = len(k)  # number of convolutions
         if equal_ch:  # equal c_ per group
-            i = torch.linspace(0, n - 1E-6, c2).floor()  # c2 indices
+            i = torch.linspace(0, n - 1e-6, c2).floor()  # c2 indices
             c_ = [(i == g).sum() for g in range(n)]  # intermediate channels
         else:  # equal weight.numel() per group
             b = [c2] + [0] * n

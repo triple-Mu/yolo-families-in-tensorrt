@@ -6,8 +6,10 @@ import torch.nn.functional as F
 def transI_fusebn(kernel, bn):
     gamma = bn.weight
     std = (bn.running_var + bn.eps).sqrt()
-    return kernel * ((gamma / std).reshape(
-        -1, 1, 1, 1)), bn.bias - bn.running_mean * gamma / std
+    return (
+        kernel * ((gamma / std).reshape(-1, 1, 1, 1)),
+        bn.bias - bn.running_mean * gamma / std,
+    )
 
 
 def transII_addbranch(kernels, biases):
@@ -45,11 +47,10 @@ def transV_avg(channels, kernel_size, groups):
     input_dim = channels // groups
     k = torch.zeros((channels, input_dim, kernel_size, kernel_size))
     k[np.arange(channels),
-      np.tile(np.arange(input_dim), groups), :, :] = 1.0 / kernel_size**2
+      np.tile(np.arange(input_dim), groups), :, :] = (1.0 / kernel_size**2)
     return k
 
 
-#   This has not been tested with non-square kernels (kernel.size(2) != kernel.size(3)) nor even-size kernels
 def transVI_multiscale(kernel, target_kernel_size):
     H_pixels_to_pad = (target_kernel_size - kernel.size(2)) // 2
     W_pixels_to_pad = (target_kernel_size - kernel.size(3)) // 2

@@ -1,20 +1,19 @@
 #!/usr/bin/env python3
-# -*- coding:utf-8 -*-
 import math
 
 import torch.nn as nn
 
-from version.yolov6.layers.common import *
+from version.yolov6.layers.common import get_block
 from version.yolov6.models.efficientrep import EfficientRep
 from version.yolov6.models.effidehead import Detect, build_effidehead_layer
 from version.yolov6.models.reppan import RepPANNeck
 
 
 class Model(nn.Module):
-    '''YOLOv6 model with backbone, neck and head.
+    """YOLOv6 model with backbone, neck and head.
     The default parts are EfficientRep Backbone, Rep-PAN and
     Efficient Decoupled Head.
-    '''
+    """
     def __init__(self,
                  config,
                  channels=3,
@@ -64,10 +63,12 @@ def build_network(config, channels, num_classes, anchors, num_layers):
 
     block = get_block(config.training_mode)
 
-    backbone = EfficientRep(in_channels=channels,
-                            channels_list=channels_list,
-                            num_repeats=num_repeat,
-                            block=block)
+    backbone = EfficientRep(
+        in_channels=channels,
+        channels_list=channels_list,
+        num_repeats=num_repeat,
+        block=block,
+    )
 
     neck = RepPANNeck(channels_list=channels_list,
                       num_repeats=num_repeat,

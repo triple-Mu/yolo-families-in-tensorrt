@@ -1,5 +1,4 @@
 import argparse
-import warnings
 from pathlib import Path
 
 import onnx
@@ -18,12 +17,15 @@ def main(opt):
     deploy_func = None
     if mod.value == 5:
         from version.yolov5.surgeon import model2deploy
+
         deploy_func = model2deploy
     elif mod.value == 6:
         from version.yolov6.surgeon import model2deploy
+
         deploy_func = model2deploy
     elif mod.value == 7:
         from version.yolov7.surgeon import model2deploy
+
         deploy_func = model2deploy
 
     else:
@@ -38,8 +40,7 @@ def main(opt):
     params = dict(weights=opt.weights,
                   device=device,
                   end2end=opt.end2end,
-                  config=end2endconfig
-                  )  #  (weights,device=None, end2end = False, config = None):
+                  config=end2endconfig)
 
     with set_env(mod.value):
         model = deploy_func(**params)
@@ -58,15 +59,23 @@ def main(opt):
         do_constant_folding=True,
         input_names=['images'],
         output_names=['num_dets', 'det_boxes', 'det_scores', 'det_classes']
-        if opt.end2end else ['outputs'])
+        if opt.end2end else ['outputs'],
+    )
 
     model_onnx = onnx.load(str(save_to))  # load onnx model
     onnx.checker.check_model(model_onnx)  # check onnx model
 
     if opt.end2end:
         shapes = [
-            opt.batch_size, 1, opt.batch_size, opt.max_obj, 4, opt.batch_size,
-            opt.max_obj, opt.batch_size, opt.max_obj
+            opt.batch_size,
+            1,
+            opt.batch_size,
+            opt.max_obj,
+            4,
+            opt.batch_size,
+            opt.max_obj,
+            opt.batch_size,
+            opt.max_obj,
         ]
         for i in model_onnx.graph.output:
             for j in i.type.tensor_type.shape.dim:
@@ -88,19 +97,24 @@ def parse_opt():
         '--version',
         type=int,
         required=True,
-        help='model version yolov(ver):ver or airdet:8 ppyoloe -1')
-    parser.add_argument('--imgsz',
-                        '--img',
-                        '--img-size',
-                        nargs='+',
-                        type=int,
-                        default=[640, 640],
-                        help='image (h, w)')
+        help='model version yolov(ver):ver or airdet:8 ppyoloe -1',
+    )
+    parser.add_argument(
+        '--imgsz',
+        '--img',
+        '--img-size',
+        nargs='+',
+        type=int,
+        default=[640, 640],
+        help='image (h, w)',
+    )
     parser.add_argument('--batch-size', type=int, default=1, help='batch size')
-    parser.add_argument('--device',
-                        type=str,
-                        default='cpu',
-                        help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
+    parser.add_argument(
+        '--device',
+        type=str,
+        default='cpu',
+        help='cuda device, i.e. 0 or 0,1,2,3 or cpu',
+    )
     parser.add_argument('--simplify',
                         action='store_true',
                         help='ONNX: simplify model')

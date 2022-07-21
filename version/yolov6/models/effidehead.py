@@ -3,20 +3,20 @@ import math
 import torch
 import torch.nn as nn
 
-from version.yolov6.layers.common import *
+from version.yolov6.layers.common import Conv
 
 
 class Detect(nn.Module):
-    '''Efficient Decoupled Head
+    """Efficient Decoupled Head
     With hardware-aware degisn, the decoupled head is optimized with
     hybridchannels methods.
-    '''
+    """
     def __init__(self,
                  num_classes=80,
                  anchors=1,
                  num_layers=3,
                  inplace=True,
-                 head_layers=None):  # detection layer
+                 head_layers=None):
         super().__init__()
         assert head_layers is not None
         self.nc = num_classes  # number of classes
@@ -85,8 +85,8 @@ class Detect(nn.Module):
                 yv, xv = torch.meshgrid(
                     [torch.arange(ny).to(d),
                      torch.arange(nx).to(d)])
-                self.grid[i] = torch.stack(
-                    (xv, yv), 2).view(1, self.na, ny, nx, 2).float()
+                self.grid[i] = (torch.stack(
+                    (xv, yv), 2).view(1, self.na, ny, nx, 2).float())
             xy = (y[..., 0:2] + self.grid[i]) * self.stride[i]  # xy
             wh = torch.exp(y[..., 2:4]) * self.stride[i]  # wh
             y = torch.cat((xy, wh, y[..., 4:]), -1)
@@ -97,24 +97,32 @@ class Detect(nn.Module):
 def build_effidehead_layer(channels_list, num_anchors, num_classes):
     head_layers = nn.Sequential(
         # stem0
-        Conv(in_channels=channels_list[6],
-             out_channels=channels_list[6],
-             kernel_size=1,
-             stride=1),
+        Conv(
+            in_channels=channels_list[6],
+            out_channels=channels_list[6],
+            kernel_size=1,
+            stride=1,
+        ),
         # cls_conv0
-        Conv(in_channels=channels_list[6],
-             out_channels=channels_list[6],
-             kernel_size=3,
-             stride=1),
+        Conv(
+            in_channels=channels_list[6],
+            out_channels=channels_list[6],
+            kernel_size=3,
+            stride=1,
+        ),
         # reg_conv0
-        Conv(in_channels=channels_list[6],
-             out_channels=channels_list[6],
-             kernel_size=3,
-             stride=1),
+        Conv(
+            in_channels=channels_list[6],
+            out_channels=channels_list[6],
+            kernel_size=3,
+            stride=1,
+        ),
         # cls_pred0
-        nn.Conv2d(in_channels=channels_list[6],
-                  out_channels=num_classes * num_anchors,
-                  kernel_size=1),
+        nn.Conv2d(
+            in_channels=channels_list[6],
+            out_channels=num_classes * num_anchors,
+            kernel_size=1,
+        ),
         # reg_pred0
         nn.Conv2d(in_channels=channels_list[6],
                   out_channels=4 * num_anchors,
@@ -124,24 +132,32 @@ def build_effidehead_layer(channels_list, num_anchors, num_classes):
                   out_channels=1 * num_anchors,
                   kernel_size=1),
         # stem1
-        Conv(in_channels=channels_list[8],
-             out_channels=channels_list[8],
-             kernel_size=1,
-             stride=1),
+        Conv(
+            in_channels=channels_list[8],
+            out_channels=channels_list[8],
+            kernel_size=1,
+            stride=1,
+        ),
         # cls_conv1
-        Conv(in_channels=channels_list[8],
-             out_channels=channels_list[8],
-             kernel_size=3,
-             stride=1),
+        Conv(
+            in_channels=channels_list[8],
+            out_channels=channels_list[8],
+            kernel_size=3,
+            stride=1,
+        ),
         # reg_conv1
-        Conv(in_channels=channels_list[8],
-             out_channels=channels_list[8],
-             kernel_size=3,
-             stride=1),
+        Conv(
+            in_channels=channels_list[8],
+            out_channels=channels_list[8],
+            kernel_size=3,
+            stride=1,
+        ),
         # cls_pred1
-        nn.Conv2d(in_channels=channels_list[8],
-                  out_channels=num_classes * num_anchors,
-                  kernel_size=1),
+        nn.Conv2d(
+            in_channels=channels_list[8],
+            out_channels=num_classes * num_anchors,
+            kernel_size=1,
+        ),
         # reg_pred1
         nn.Conv2d(in_channels=channels_list[8],
                   out_channels=4 * num_anchors,
@@ -151,24 +167,32 @@ def build_effidehead_layer(channels_list, num_anchors, num_classes):
                   out_channels=1 * num_anchors,
                   kernel_size=1),
         # stem2
-        Conv(in_channels=channels_list[10],
-             out_channels=channels_list[10],
-             kernel_size=1,
-             stride=1),
+        Conv(
+            in_channels=channels_list[10],
+            out_channels=channels_list[10],
+            kernel_size=1,
+            stride=1,
+        ),
         # cls_conv2
-        Conv(in_channels=channels_list[10],
-             out_channels=channels_list[10],
-             kernel_size=3,
-             stride=1),
+        Conv(
+            in_channels=channels_list[10],
+            out_channels=channels_list[10],
+            kernel_size=3,
+            stride=1,
+        ),
         # reg_conv2
-        Conv(in_channels=channels_list[10],
-             out_channels=channels_list[10],
-             kernel_size=3,
-             stride=1),
+        Conv(
+            in_channels=channels_list[10],
+            out_channels=channels_list[10],
+            kernel_size=3,
+            stride=1,
+        ),
         # cls_pred2
-        nn.Conv2d(in_channels=channels_list[10],
-                  out_channels=num_classes * num_anchors,
-                  kernel_size=1),
+        nn.Conv2d(
+            in_channels=channels_list[10],
+            out_channels=num_classes * num_anchors,
+            kernel_size=1,
+        ),
         # reg_pred2
         nn.Conv2d(in_channels=channels_list[10],
                   out_channels=4 * num_anchors,
@@ -176,5 +200,6 @@ def build_effidehead_layer(channels_list, num_anchors, num_classes):
         # obj_pred2
         nn.Conv2d(in_channels=channels_list[10],
                   out_channels=1 * num_anchors,
-                  kernel_size=1))
+                  kernel_size=1),
+    )
     return head_layers

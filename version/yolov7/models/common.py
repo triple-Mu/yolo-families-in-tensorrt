@@ -11,7 +11,7 @@ class ImplicitA(nn.Module):
         super(ImplicitA, self).__init__()
         self.channel = channel
         self.implicit = nn.Parameter(torch.zeros(1, channel, 1, 1))
-        nn.init.normal_(self.implicit, std=.02)
+        nn.init.normal_(self.implicit, std=0.02)
 
     def forward(self, x):
         return self.implicit + x
@@ -22,7 +22,7 @@ class ImplicitM(nn.Module):
         super(ImplicitM, self).__init__()
         self.channel = channel
         self.implicit = nn.Parameter(torch.ones(1, channel, 1, 1))
-        nn.init.normal_(self.implicit, mean=1., std=.02)
+        nn.init.normal_(self.implicit, mean=1.0, std=0.02)
 
     def forward(self, x):
         return self.implicit * x
@@ -63,10 +63,15 @@ class ReOrg(nn.Module):
         super(ReOrg, self).__init__()
 
     def forward(self, x):  # x(b,c,w,h) -> y(b,4c,w/2,h/2)
-        return torch.cat([
-            x[..., ::2, ::2], x[..., 1::2, ::2], x[..., ::2, 1::2],
-            x[..., 1::2, 1::2]
-        ], 1)
+        return torch.cat(
+            [
+                x[..., ::2, ::2],
+                x[..., 1::2, ::2],
+                x[..., ::2, 1::2],
+                x[..., 1::2, 1::2],
+            ],
+            1,
+        )
 
 
 class DownC(nn.Module):
@@ -129,8 +134,8 @@ class Conv(nn.Module):
                               groups=g,
                               bias=False)
         self.bn = nn.BatchNorm2d(c2)
-        self.act = nn.SiLU() if act is True else (
-            act if isinstance(act, nn.Module) else nn.Identity())
+        self.act = (nn.SiLU() if act is True else
+                    (act if isinstance(act, nn.Module) else nn.Identity()))
 
     def forward(self, x):
         return self.act(self.bn(self.conv(x)))
@@ -156,8 +161,8 @@ class RepConv(nn.Module):
 
         padding_11 = autopad(k, p) - k // 2
 
-        self.act = nn.LeakyReLU(0.1, inplace=True) if act is True else (
-            act if isinstance(act, nn.Module) else nn.Identity())
+        self.act = (nn.LeakyReLU(0.1, inplace=True) if act is True else
+                    (act if isinstance(act, nn.Module) else nn.Identity()))
 
         if deploy:
             self.rbr_reparam = nn.Conv2d(c1,
@@ -183,7 +188,7 @@ class RepConv(nn.Module):
             )
 
     def forward(self, inputs):
-        if hasattr(self, "rbr_reparam"):
+        if hasattr(self, 'rbr_reparam'):
             return self.act(self.rbr_reparam(inputs))
 
         if self.rbr_identity is None:
@@ -220,7 +225,7 @@ class RepConv(nn.Module):
             eps = branch[1].eps
         else:
             assert isinstance(branch, nn.BatchNorm2d)
-            if not hasattr(self, "id_tensor"):
+            if not hasattr(self, 'id_tensor'):
                 input_dim = self.in_channels // self.groups
                 kernel_value = np.zeros((self.in_channels, input_dim, 3, 3),
                                         dtype=np.float32)
@@ -254,15 +259,17 @@ class RepConv(nn.Module):
         weights = conv.weight * t
 
         bn = nn.Identity()
-        conv = nn.Conv2d(in_channels=conv.in_channels,
-                         out_channels=conv.out_channels,
-                         kernel_size=conv.kernel_size,
-                         stride=conv.stride,
-                         padding=conv.padding,
-                         dilation=conv.dilation,
-                         groups=conv.groups,
-                         bias=True,
-                         padding_mode=conv.padding_mode)
+        conv = nn.Conv2d(
+            in_channels=conv.in_channels,
+            out_channels=conv.out_channels,
+            kernel_size=conv.kernel_size,
+            stride=conv.stride,
+            padding=conv.padding,
+            dilation=conv.dilation,
+            groups=conv.groups,
+            bias=True,
+            padding_mode=conv.padding_mode,
+        )
 
         conv.weight = torch.nn.Parameter(weights)
         conv.bias = torch.nn.Parameter(bias)
@@ -282,26 +289,26 @@ class RepConv(nn.Module):
                                                       [1, 1, 1, 1])
 
         # Fuse self.rbr_identity
-        if (isinstance(self.rbr_identity, nn.BatchNorm2d) or isinstance(
-                self.rbr_identity, nn.modules.batchnorm.SyncBatchNorm)):
+        if isinstance(self.rbr_identity, nn.BatchNorm2d) or isinstance(
+                self.rbr_identity, nn.modules.batchnorm.SyncBatchNorm):
             # print(f"fuse: rbr_identity == BatchNorm2d or SyncBatchNorm")
-            identity_conv_1x1 = nn.Conv2d(in_channels=self.in_channels,
-                                          out_channels=self.out_channels,
-                                          kernel_size=1,
-                                          stride=1,
-                                          padding=0,
-                                          groups=self.groups,
-                                          bias=False)
+            identity_conv_1x1 = nn.Conv2d(
+                in_channels=self.in_channels,
+                out_channels=self.out_channels,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+                groups=self.groups,
+                bias=False,
+            )
             identity_conv_1x1.weight.data = identity_conv_1x1.weight.data.to(
                 self.rbr_1x1.weight.data.device)
-            identity_conv_1x1.weight.data = identity_conv_1x1.weight.data.squeeze(
-            ).squeeze()
-            # print(f" identity_conv_1x1.weight = {identity_conv_1x1.weight.shape}")
+            identity_conv_1x1.weight.data = (
+                identity_conv_1x1.weight.data.squeeze().squeeze())
             identity_conv_1x1.weight.data.fill_(0.0)
             identity_conv_1x1.weight.data.fill_diagonal_(1.0)
-            identity_conv_1x1.weight.data = identity_conv_1x1.weight.data.unsqueeze(
-                2).unsqueeze(3)
-            # print(f" identity_conv_1x1.weight = {identity_conv_1x1.weight.shape}")
+            identity_conv_1x1.weight.data = identity_conv_1x1.\
+                weight.data.unsqueeze(2).unsqueeze(3)
 
             identity_conv_1x1 = self.fuse_conv_bn(identity_conv_1x1,
                                                   self.rbr_identity)
@@ -309,15 +316,11 @@ class RepConv(nn.Module):
             weight_identity_expanded = torch.nn.functional.pad(
                 identity_conv_1x1.weight, [1, 1, 1, 1])
         else:
-            # print(f"fuse: rbr_identity != BatchNorm2d, rbr_identity = {self.rbr_identity}")
+
             bias_identity_expanded = torch.nn.Parameter(
                 torch.zeros_like(rbr_1x1_bias))
             weight_identity_expanded = torch.nn.Parameter(
                 torch.zeros_like(weight_1x1_expanded))
-
-            # print(f"self.rbr_1x1.weight = {self.rbr_1x1.weight.shape}, ")
-        # print(f"weight_1x1_expanded = {weight_1x1_expanded.shape}, ")
-        # print(f"self.rbr_dense.weight = {self.rbr_dense.weight.shape}, ")
 
         self.rbr_dense.weight = torch.nn.Parameter(self.rbr_dense.weight +
                                                    weight_1x1_expanded +
@@ -366,7 +369,6 @@ class DWConvTranspose2d(nn.ConvTranspose2d):
 
 
 class TransformerLayer(nn.Module):
-    # Transformer layer https://arxiv.org/abs/2010.11929 (LayerNorm layers removed for better performance)
     def __init__(self, c, num_heads):
         super().__init__()
         self.q = nn.Linear(c, c, bias=False)
@@ -568,8 +570,15 @@ class Focus(nn.Module):
 
     def forward(self, x):  # x(b,c,w,h) -> y(b,4c,w/2,h/2)
         return self.conv(
-            torch.cat((x[..., ::2, ::2], x[..., 1::2, ::2], x[..., ::2, 1::2],
-                       x[..., 1::2, 1::2]), 1))
+            torch.cat(
+                (
+                    x[..., ::2, ::2],
+                    x[..., 1::2, ::2],
+                    x[..., ::2, 1::2],
+                    x[..., 1::2, 1::2],
+                ),
+                1,
+            ))
         # return self.conv(self.contract(x))
 
 
@@ -600,10 +609,11 @@ class GhostBottleneck(nn.Module):
         self.conv = nn.Sequential(
             GhostConv(c1, c_, 1, 1),  # pw
             DWConv(c_, c_, k, s, act=False) if s == 2 else nn.Identity(),  # dw
-            GhostConv(c_, c2, 1, 1, act=False))  # pw-linear
-        self.shortcut = nn.Sequential(DWConv(
-            c1, c1, k, s, act=False), Conv(
-                c1, c2, 1, 1, act=False)) if s == 2 else nn.Identity()
+            GhostConv(c_, c2, 1, 1, act=False),
+        )  # pw-linear
+        self.shortcut = (nn.Sequential(DWConv(c1, c1, k, s, act=False),
+                                       Conv(c1, c2, 1, 1, act=False))
+                         if s == 2 else nn.Identity())
 
     def forward(self, x):
         return self.conv(x) + self.shortcut(x)
@@ -616,7 +626,12 @@ class Contract(nn.Module):
         self.gain = gain
 
     def forward(self, x):
-        b, c, h, w = x.size(
+        (
+            b,
+            c,
+            h,
+            w,
+        ) = x.size(
         )  # assert (h / s == 0) and (W / s == 0), 'Indivisible gain'
         s = self.gain
         x = x.view(b, c, h // s, s, w // s, s)  # x(1,64,40,2,40,2)
