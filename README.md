@@ -14,12 +14,11 @@
 
 图中的输出共计 4 个，分别表示:
 
-```
 - `num_dets` : Batch 中每张图片检测的目标数量, 类型为 `int32`;
 - `det_boxes` : Batch 中每张图片中每个目标的检测框, 目标框格式为左上角和右下角坐标(x0,y0,x1,y1), 类型为 `float32`;
 - `det_scores` : Batch 中每张图片中每个目标的置信度, 类型为 `float32`;
 - `det_classes` : Batch 中每张图片中每个目标的类别 `id`,类型为 `int32`;
-```
+
 
 ### 使用方法
 
@@ -53,8 +52,8 @@ python ./export.py \
 
 # 转换 ONNX 为 TensorRT engine
 trtexec --onnx=./yolov7.onnx \
-		--saveEngine=./yolov7.engine \
-		--fp16 # 如果使用 fp16
+	--saveEngine=./yolov7.engine \
+	--fp16 # 如果使用 fp16
 ```
 
 ### 参数介绍
