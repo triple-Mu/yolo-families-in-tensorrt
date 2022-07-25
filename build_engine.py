@@ -4,22 +4,23 @@ import tensorrt as trt
 
 
 def main_torch(opt):
-    import torch
-    from torch.utils.data.dataloader import DataLoader
+    if opt.int8:
+        import torch
+        from torch.utils.data.dataloader import DataLoader
 
-    from utils.torch_calibrator import TorchCalibrator
-    from utils.torch_datasets import TorchDataset
+        from utils.torch_calibrator import TorchCalibrator
+        from utils.torch_datasets import TorchDataset
 
-    dataset = TorchDataset(root=opt.calib_data)
-    dataloader = DataLoader(dataset,
-                            batch_size=opt.batch_size,
-                            shuffle=True,
-                            num_workers=0,
-                            pin_memory=True,
-                            drop_last=True,
-                            collate_fn=dataset.collate_fn)
+        dataset = TorchDataset(root=opt.calib_data)
+        dataloader = DataLoader(dataset,
+                                batch_size=opt.batch_size,
+                                shuffle=True,
+                                num_workers=0,
+                                pin_memory=True,
+                                drop_last=True,
+                                collate_fn=dataset.collate_fn)
 
-    device = torch.device(f'cuda:{opt.device}')
+        device = torch.device(f'cuda:{opt.device}')
     logger = trt.Logger(
         trt.Logger.INFO)  # VERBOSE，INFO，WARNING，ERRROR，INTERNAL_ERROR
     if opt.verbose:
@@ -42,11 +43,12 @@ def main_torch(opt):
     if opt.int8 and builder.platform_has_fast_int8:
         config.set_flag(trt.BuilderFlag.INT8)
 
-    # calib_shape = [opt.batch_size, 3, *opt.imgsz]
-    # calib_dtype = trt.nptype(trt.float32)
-    Calibrator = TorchCalibrator(opt.cache, device=device)
-    Calibrator.set_image_batcher(dataloader)
-    config.int8_calibrator = Calibrator
+    if opt.int8:
+        # calib_shape = [opt.batch_size, 3, *opt.imgsz]
+        # calib_dtype = trt.nptype(trt.float32)
+        Calibrator = TorchCalibrator(opt.cache, device=device)
+        Calibrator.set_image_batcher(dataloader)
+        config.int8_calibrator = Calibrator
 
     with builder.build_serialized_network(network, config) as engine, open(
             opt.engine, 'wb') as t:
@@ -54,11 +56,12 @@ def main_torch(opt):
 
 
 def main_cuda(opt):
-    from utils.cuda_calibrator import CudaCalibrator
-    from utils.numpy_datasets import NumpyhDataloader
+    if opt.int8:
+        from utils.cuda_calibrator import CudaCalibrator
+        from utils.numpy_datasets import NumpyhDataloader
 
-    dataloader = NumpyhDataloader(root=opt.calib_data,
-                                  batch_size=opt.batch_size)
+        dataloader = NumpyhDataloader(root=opt.calib_data,
+                                      batch_size=opt.batch_size)
 
     logger = trt.Logger(
         trt.Logger.INFO)  # VERBOSE，INFO，WARNING，ERRROR，INTERNAL_ERROR
@@ -82,11 +85,12 @@ def main_cuda(opt):
     if opt.int8 and builder.platform_has_fast_int8:
         config.set_flag(trt.BuilderFlag.INT8)
 
-    # calib_shape = [opt.batch_size, 3, *opt.imgsz]
-    # calib_dtype = trt.nptype(trt.float32)
-    Calibrator = CudaCalibrator(opt.cache)
-    Calibrator.set_image_batcher(dataloader)
-    config.int8_calibrator = Calibrator
+    if opt.int8:
+        # calib_shape = [opt.batch_size, 3, *opt.imgsz]
+        # calib_dtype = trt.nptype(trt.float32)
+        Calibrator = CudaCalibrator(opt.cache)
+        Calibrator.set_image_batcher(dataloader)
+        config.int8_calibrator = Calibrator
 
     with builder.build_serialized_network(network, config) as engine, open(
             opt.engine, 'wb') as t:
