@@ -7,6 +7,7 @@ import torch.nn as nn
 
 
 class ImplicitA(nn.Module):
+
     def __init__(self, channel):
         super(ImplicitA, self).__init__()
         self.channel = channel
@@ -18,6 +19,7 @@ class ImplicitA(nn.Module):
 
 
 class ImplicitM(nn.Module):
+
     def __init__(self, channel):
         super(ImplicitM, self).__init__()
         self.channel = channel
@@ -29,6 +31,7 @@ class ImplicitM(nn.Module):
 
 
 class Shortcut(nn.Module):
+
     def __init__(self, dimension=0):
         super(Shortcut, self).__init__()
         self.d = dimension
@@ -59,6 +62,7 @@ class SP(nn.Module):
 
 
 class ReOrg(nn.Module):
+
     def __init__(self):
         super(ReOrg, self).__init__()
 
@@ -75,6 +79,7 @@ class ReOrg(nn.Module):
 
 
 class DownC(nn.Module):
+
     def __init__(self, c1, c2, n=1, k=2):
         super(DownC, self).__init__()
         c_ = int(c1)  # hidden channels
@@ -88,6 +93,7 @@ class DownC(nn.Module):
 
 
 class SPPCSPC(nn.Module):
+
     def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5, k=(5, 9, 13)):
         super(SPPCSPC, self).__init__()
         c_ = int(2 * c2 * e)  # hidden channels
@@ -369,6 +375,7 @@ class DWConvTranspose2d(nn.ConvTranspose2d):
 
 
 class TransformerLayer(nn.Module):
+
     def __init__(self, c, num_heads):
         super().__init__()
         self.q = nn.Linear(c, c, bias=False)

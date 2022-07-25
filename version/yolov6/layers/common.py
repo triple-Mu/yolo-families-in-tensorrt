@@ -17,6 +17,7 @@ from version.yolov6.layers.dbb_transforms import (transI_fusebn,
 
 class SiLU(nn.Module):
     """Activation of SiLU"""
+
     @staticmethod
     def forward(x):
         return x * torch.sigmoid(x)
@@ -24,6 +25,7 @@ class SiLU(nn.Module):
 
 class Conv(nn.Module):
     """Normal Conv with SiLU activation"""
+
     def __init__(self,
                  in_channels,
                  out_channels,
@@ -54,6 +56,7 @@ class Conv(nn.Module):
 
 class SimConv(nn.Module):
     """Normal Conv with ReLU activation"""
+
     def __init__(self,
                  in_channels,
                  out_channels,
@@ -84,6 +87,7 @@ class SimConv(nn.Module):
 
 class SimSPPF(nn.Module):
     """Simplified SPPF with ReLU activation"""
+
     def __init__(self, in_channels, out_channels, kernel_size=5):
         super().__init__()
         c_ = in_channels // 2  # hidden channels
@@ -104,6 +108,7 @@ class SimSPPF(nn.Module):
 
 class Transpose(nn.Module):
     """Normal Transpose, default for upsampling"""
+
     def __init__(self, in_channels, out_channels, kernel_size=2, stride=2):
         super().__init__()
         self.upsample_transpose = torch.nn.ConvTranspose2d(
@@ -119,6 +124,7 @@ class Transpose(nn.Module):
 
 
 class Concat(nn.Module):
+
     def __init__(self, dimension=1):
         super().__init__()
         self.d = dimension
@@ -147,6 +153,7 @@ def conv_bn(in_channels, out_channels, kernel_size, stride, padding, groups=1):
 
 
 class RepVGGBlock(nn.Module):
+
     def __init__(
         self,
         in_channels,
@@ -298,6 +305,7 @@ class RepVGGBlock(nn.Module):
 
 
 class RealVGGBlock(nn.Module):
+
     def __init__(
         self,
         in_channels,
@@ -333,6 +341,7 @@ class RealVGGBlock(nn.Module):
 
 
 class ScaleLayer(torch.nn.Module):
+
     def __init__(self, num_features, use_bias=True, scale_init=1.0):
         super(ScaleLayer, self).__init__()
         self.weight = Parameter(torch.Tensor(num_features))
@@ -355,6 +364,7 @@ class ScaleLayer(torch.nn.Module):
 
 #   A CSLA block is a LinearAddBlock with is_csla=True
 class LinearAddBlock(nn.Module):
+
     def __init__(
         self,
         in_channels,
@@ -445,6 +455,7 @@ def conv_bn_v2(
 
 
 class IdentityBasedConv1x1(nn.Conv2d):
+
     def __init__(self, channels, groups=1):
         super(IdentityBasedConv1x1, self).__init__(
             in_channels=channels,
@@ -482,6 +493,7 @@ class IdentityBasedConv1x1(nn.Conv2d):
 
 
 class BNAndPadLayer(nn.Module):
+
     def __init__(
         self,
         pad_pixels,
@@ -539,6 +551,7 @@ class DBBBlock(nn.Module):
     """
     RepBlock is a stage block with rep-style basic block
     """
+
     def __init__(self, in_channels, out_channels, n=1):
         super().__init__()
         self.conv1 = DiverseBranchBlock(in_channels, out_channels)
@@ -554,6 +567,7 @@ class DBBBlock(nn.Module):
 
 
 class DiverseBranchBlock(nn.Module):
+
     def __init__(
             self,
             in_channels,
@@ -800,6 +814,7 @@ class RepBlock(nn.Module):
     """
     RepBlock is a stage block with rep-style basic block
     """
+
     def __init__(self, in_channels, out_channels, n=1, block=RepVGGBlock):
         super().__init__()
         self.conv1 = block(in_channels, out_channels)

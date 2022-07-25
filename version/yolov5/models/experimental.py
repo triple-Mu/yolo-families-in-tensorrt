@@ -7,6 +7,7 @@ import torch.nn as nn
 
 class SiLU(nn.Module):
     """Activation of SiLU"""
+
     @staticmethod
     def forward(x):
         return x * torch.sigmoid(x)
