@@ -69,3 +69,38 @@ trtexec --onnx=./yolov7.onnx \
 - `--max-obj` : 每张图片的最大检测框数量。
 - `--iou-thres` : NMS 算法中的 IOU 阈值。
 - `--conf-thres` : NMS 算法中的置信度阈值。
+
+### TensorRT-INT8 量化
+
+准备模型训练时使用的图片放到 `./calib_data` 下，路径格式如下：
+
+``` shell
+# 文件名随意，文件后缀最好是 .jpg
+./calib_data/0001.jpg
+./calib_data/0002.jpg
+./calib_data/0003.jpg
+./calib_data/0004.jpg
+./calib_data/0005.jpg
+....
+```
+
+本仓库支持 `pytorch` 和 `cuda-python` 作为量化后端喂给 TensorRT 校准数据。
+
+用法：
+
+``` shell
+# pytorch + TensorRT int8量化
+python ./build_engine.py \
+	--onnx yolov7.onnx \
+	--engine yolov7.engine \
+	--batch-size 1 \ # 需要和前文导出 onnx 时指定一致
+	--imgsz 640 \
+	--device 0 \
+	--verbose \ # 打印详细日志(未来会使用它增加绘制 TensorRT engine 结构的功能)
+	--workspace 8 \
+	--fp16 \ # 如果需要 fp16 + int8 可以同时开启
+	--int8 \
+	--calib-data ./calib_data \ # 校准图片路径可以自定义
+	--cache ./calib.cache \ # 校准集缓存,方便下次使用
+	--method torch
+```

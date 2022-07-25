@@ -5,3 +5,4 @@ onnxsim>=0.4.0
 thop
 torch
 # onnxsim_no_ort>=0.4.0
+# cuda-python # int8 calibration
