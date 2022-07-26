@@ -11,6 +11,7 @@ class Detect(nn.Module):
     With hardware-aware degisn, the decoupled head is optimized with
     hybridchannels methods.
     """
+
     def __init__(self,
                  num_classes=80,
                  anchors=1,

@@ -10,6 +10,7 @@ img_formats = [
 
 
 class NumpyhDataloader(object):
+
     def __init__(self,
                  root,
                  input_shape=(640, 640),

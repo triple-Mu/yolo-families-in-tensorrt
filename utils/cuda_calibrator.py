@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class CudaCalibrator(trt.IInt8EntropyCalibrator2):
+
     def __init__(self, cache_file):
 
         super().__init__()

@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 class TorchCalibrator(trt.IInt8EntropyCalibrator2):
+
     def __init__(self, cache_file, device=None):
 
         super().__init__()
