@@ -1,10 +1,74 @@
 import argparse
+import logging
 
 import tensorrt as trt
 
+logging.basicConfig(level=logging.INFO)
+logging.getLogger('build_engine').setLevel(logging.INFO)
+log = logging.getLogger('build_engine')
 
-def main_torch(opt):
-    if opt.int8:
+
+def main(opt):
+
+    # VERBOSE，INFO，WARNING，ERRROR，INTERNAL_ERROR
+    logger = trt.Logger(trt.Logger.INFO)
+    if opt.verbose:
+        logger.min_severity = trt.Logger.Severity.VERBOSE
+    trt.init_libnvinfer_plugins(logger, namespace='')
+
+    builder = trt.Builder(logger)
+    config = builder.create_builder_config()
+    config.max_workspace_size = opt.workspace * 1 << 30
+
+    flag = (1 << int(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH))
+    network = builder.create_network(flag)
+
+    parser = trt.OnnxParser(network, logger)
+    status = parser.parse_from_file(opt.onnx)
+    if not status:
+        log.error('Failed parsing .onnx file!')
+        for error in range(parser.num_errors):
+            print(parser.get_error(error))
+        exit()
+
+    inputs = [network.get_input(i) for i in range(network.num_inputs)]
+    outputs = [network.get_output(i) for i in range(network.num_outputs)]
+
+    log.info(f"\nNetwork Description\n{'*'*30}")
+    for i in inputs:
+        print(f"Input '{i.name}' with shape {i.shape} and dtype {i.dtype}")
+    for o in outputs:
+        print(f"Output '{o.name}' with shape {o.shape} and dtype {o.dtype}")
+    print(f"{'*'*30}")
+    if opt.dynamic_batch:
+        wandh = network.get_input(0).shape[-2:]
+        name = network.get_input(0).name
+        profile = builder.create_optimization_profile()
+        log.info(f'\ndynamic batch profile is\n\
+        {(opt.batch_size[0], 3, *wandh)}\n\
+        {(opt.batch_size[1], 3, *wandh)}\n\
+        {(opt.batch_size[2], 3, *wandh)}')
+        profile.set_shape(name, (opt.batch_size[0], 3, *wandh),
+                          (opt.batch_size[1], 3, *wandh),
+                          (opt.batch_size[2], 3, *wandh))
+        config.add_optimization_profile(profile)
+
+    if opt.fp16 and builder.platform_has_fast_fp16:
+        config.set_flag(trt.BuilderFlag.FP16)
+
+    if opt.int8 and builder.platform_has_fast_int8:
+        config.set_flag(trt.BuilderFlag.INT8)
+        config.int8_calibrator = get_tools(opt)
+
+    with builder.build_serialized_network(network, config) as engine, open(
+            opt.engine, 'wb') as t:
+        t.write(engine)
+
+
+def get_tools(opt):
+    assert opt.method in ('torch', 'cuda')
+    dataloader = Calibrator = None
+    if opt.method == 'torch':
         import torch
         from torch.utils.data.dataloader import DataLoader
 
@@ -13,97 +77,46 @@ def main_torch(opt):
 
         dataset = TorchDataset(root=opt.calib_data)
         dataloader = DataLoader(dataset,
-                                batch_size=opt.batch_size,
+                                batch_size=opt.batch_size[0],
                                 shuffle=True,
                                 num_workers=0,
                                 pin_memory=True,
                                 drop_last=True,
                                 collate_fn=dataset.collate_fn)
-
         device = torch.device(f'cuda:{opt.device}')
-    logger = trt.Logger(
-        trt.Logger.INFO)  # VERBOSE，INFO，WARNING，ERRROR，INTERNAL_ERROR
-    if opt.verbose:
-        logger.min_severity = trt.Logger.Severity.VERBOSE
-    trt.init_libnvinfer_plugins(logger, namespace='')
-
-    builder = trt.Builder(logger)
-    config = builder.create_builder_config()
-    config.max_workspace_size = opt.workspace * 1 << 30
-
-    flag = (1 << int(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH))
-    network = builder.create_network(flag)
-
-    parser = trt.OnnxParser(network, logger)
-    parser.parse_from_file(opt.onnx)
-
-    if opt.fp16 and builder.platform_has_fast_fp16:
-        config.set_flag(trt.BuilderFlag.FP16)
-
-    if opt.int8 and builder.platform_has_fast_int8:
-        config.set_flag(trt.BuilderFlag.INT8)
-
-    if opt.int8:
-        # calib_shape = [opt.batch_size, 3, *opt.imgsz]
-        # calib_dtype = trt.nptype(trt.float32)
         Calibrator = TorchCalibrator(opt.cache, device=device)
         Calibrator.set_image_batcher(dataloader)
-        config.int8_calibrator = Calibrator
 
-    with builder.build_serialized_network(network, config) as engine, open(
-            opt.engine, 'wb') as t:
-        t.write(engine)
-
-
-def main_cuda(opt):
-    if opt.int8:
+    elif opt.method == 'cuda':
         from utils.cuda_calibrator import CudaCalibrator
         from utils.numpy_datasets import NumpyhDataloader
 
         dataloader = NumpyhDataloader(root=opt.calib_data,
-                                      batch_size=opt.batch_size)
+                                      batch_size=opt.batch_size[0])
 
-    logger = trt.Logger(
-        trt.Logger.INFO)  # VERBOSE，INFO，WARNING，ERRROR，INTERNAL_ERROR
-    if opt.verbose:
-        logger.min_severity = trt.Logger.Severity.VERBOSE
-    trt.init_libnvinfer_plugins(logger, namespace='')
-
-    builder = trt.Builder(logger)
-    config = builder.create_builder_config()
-    config.max_workspace_size = opt.workspace * 1 << 30
-
-    flag = (1 << int(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH))
-    network = builder.create_network(flag)
-
-    parser = trt.OnnxParser(network, logger)
-    parser.parse_from_file(opt.onnx)
-
-    if opt.fp16 and builder.platform_has_fast_fp16:
-        config.set_flag(trt.BuilderFlag.FP16)
-
-    if opt.int8 and builder.platform_has_fast_int8:
-        config.set_flag(trt.BuilderFlag.INT8)
-
-    if opt.int8:
-        # calib_shape = [opt.batch_size, 3, *opt.imgsz]
-        # calib_dtype = trt.nptype(trt.float32)
         Calibrator = CudaCalibrator(opt.cache)
         Calibrator.set_image_batcher(dataloader)
-        config.int8_calibrator = Calibrator
 
-    with builder.build_serialized_network(network, config) as engine, open(
-            opt.engine, 'wb') as t:
-        t.write(engine)
+    assert dataloader is not None and Calibrator is not None
+    return Calibrator
 
 
 def parse_opt():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--onnx', type=str, required=True, help='onnx path')
-    parser.add_argument('--engine', type=str, default=None, help='engine path')
+    parser.add_argument('-o',
+                        '--onnx',
+                        type=str,
+                        required=True,
+                        help='onnx path')
+    parser.add_argument('-e',
+                        '--engine',
+                        type=str,
+                        default=None,
+                        help='engine path')
     parser.add_argument('--batch-size',
+                        nargs='+',
                         type=int,
-                        default=1,
+                        default=[1, 16, 32],
                         help='batch_size of tensorrt engine')
     parser.add_argument(
         '--imgsz',
@@ -148,12 +161,16 @@ def parse_opt():
                         help='calib dataloader, you can choose torch or cuda')
     opt = parser.parse_args()
     opt.imgsz *= 2 if len(opt.imgsz) == 1 else 1
+
+    opt.batch_size = opt.batch_size if len(
+        opt.batch_size) == 3 else opt.batch_size[-1:]
+    opt.batch_size.sort()
+    opt.dynamic_batch = len(opt.batch_size) == 3
+    opt.engine = opt.engine if opt.engine else opt.onnx.replace(
+        'onnx', 'engine')
     return opt
 
 
 if __name__ == '__main__':
     opt = parse_opt()
-    if opt.method == 'torch':
-        main_torch(opt)
-    elif opt.method == 'cuda':
-        main_cuda(opt)
+    main(opt)
