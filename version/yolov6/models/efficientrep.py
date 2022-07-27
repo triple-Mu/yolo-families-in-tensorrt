@@ -4,6 +4,7 @@ from version.yolov6.layers.common import RepBlock, RepVGGBlock, SimSPPF
 
 
 class EfficientRep(nn.Module):
+
     def __init__(self,
                  in_channels=3,
                  channels_list=None,

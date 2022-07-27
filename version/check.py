@@ -9,6 +9,7 @@ import torch.nn as nn
 
 class TRT_NMS(torch.autograd.Function):
     """TensorRT NMS operation"""
+
     @staticmethod
     def forward(
         ctx,
@@ -66,6 +67,7 @@ class TRT_NMS(torch.autograd.Function):
 
 class ONNX_TRT(nn.Module):
     """onnx module with TensorRT NMS operation."""
+
     def __init__(self,
                  max_obj=100,
                  iou_thres=0.45,
@@ -102,6 +104,7 @@ class ONNX_TRT(nn.Module):
 
 class End2End(nn.Module):
     """export onnx or tensorrt model with NMS operation."""
+
     def __init__(self,
                  model,
                  max_obj=100,

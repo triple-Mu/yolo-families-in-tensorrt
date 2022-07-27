@@ -15,6 +15,7 @@ TORCH = True
 
 
 class TorchDataset(Dataset):
+
     def __init__(self,
                  root,
                  input_shape=(640, 640),

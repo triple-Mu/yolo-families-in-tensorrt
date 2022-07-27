@@ -6,6 +6,7 @@ from version.yolov6.layers.common import (RepBlock, RepVGGBlock, SimConv,
 
 
 class RepPANNeck(nn.Module):
+
     def __init__(
         self,
         channels_list=None,

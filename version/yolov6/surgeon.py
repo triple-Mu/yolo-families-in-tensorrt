@@ -8,6 +8,7 @@ from version.yolov6.models.yolo import Detect
 
 class Conv(nn.Module):
     """Normal Conv with SiLU activation"""
+
     def __init__(self,
                  in_channels,
                  out_channels,
@@ -38,6 +39,7 @@ class Conv(nn.Module):
 
 class SiLU(nn.Module):
     """Activation of SiLU"""
+
     @staticmethod
     def forward(x):
         return x * torch.sigmoid(x)
