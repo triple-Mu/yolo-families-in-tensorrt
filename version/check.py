@@ -160,4 +160,5 @@ class MODEL(IntEnum):
     yolov6 = 6
     yolov7 = 7
     airdet = 8
+    yolox = 10
     ppyoloe = -1

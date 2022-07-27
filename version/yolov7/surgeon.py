@@ -6,7 +6,7 @@ from version.yolov7.models.experimental import Ensemble, SiLU
 from version.yolov7.models.yolo import Detect, Model
 
 
-def model2deploy(weights, device=None, end2end=False, config=None):
+def model2deploy(weights, device=None, end2end=False, config=None,**kwargs):
     device = torch.device('cpu') if device is None else device
     inplace = True
     model = Ensemble()

@@ -70,7 +70,7 @@ def fuse_conv_and_bn(conv, bn):
     return fusedconv
 
 
-def model2deploy(weights, device=None, end2end=False, config=None):
+def model2deploy(weights, device=None, end2end=False, config=None,**kwargs):
     device = torch.device('cpu') if device is None else device
     ckpt = torch.load(weights, map_location=device)
     model = ckpt['ema' if ckpt.get('ema') else 'model'].to(device).float()
