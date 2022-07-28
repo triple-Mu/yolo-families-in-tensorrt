@@ -11,7 +11,7 @@ log = logging.getLogger('build_engine')
 def main(opt):
 
     # VERBOSE，INFO，WARNING，ERRROR，INTERNAL_ERROR
-    logger = trt.Logger(trt.Logger.INFO)
+    logger = trt.Logger(trt.Logger.ERROR)
     if opt.verbose:
         logger.min_severity = trt.Logger.Severity.VERBOSE
     trt.init_libnvinfer_plugins(logger, namespace='')
@@ -155,6 +155,10 @@ def parse_opt():
                         type=str,
                         default='./calib.cache',
                         help='calib cache for int8 calibration')
+    parser.add_argument('--method',
+                        type=str,
+                        default='torch',
+                        help='calib dataloader, you can choose torch or cuda')
     parser.add_argument('--method',
                         type=str,
                         default='torch',
