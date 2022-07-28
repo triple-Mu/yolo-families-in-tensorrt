@@ -159,10 +159,6 @@ def parse_opt():
                         type=str,
                         default='torch',
                         help='calib dataloader, you can choose torch or cuda')
-    parser.add_argument('--method',
-                        type=str,
-                        default='torch',
-                        help='calib dataloader, you can choose torch or cuda')
     opt = parser.parse_args()
     opt.imgsz *= 2 if len(opt.imgsz) == 1 else 1
 
