@@ -20,7 +20,7 @@ class NumpyhDataloader(object):
         self.root = []
         self.input_shape = input_shape
         self.static_resize = static_resize
-        for path in Path(root).glob(f"*[{'.'.join(img_formats)}]"):
+        for path in Path(root).glob(f"*[{'. '.join(img_formats)}]"):
             self.root.append(str(path))
         shuffle(self.root)
         length = min(length, len(self.root))
